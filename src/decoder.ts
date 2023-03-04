@@ -5,11 +5,17 @@ class Decoder {
     this.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
   }
 
-  public async decode(audioData: ArrayBuffer): Promise<[Float32Array, Float32Array]> {
+  public async decode(audioData: ArrayBuffer): Promise<{
+    sampleRate: number
+    channelData: [Float32Array, Float32Array]
+  }> {
     const buffer = await this.audioCtx.decodeAudioData(audioData)
     const left = buffer.getChannelData(0)
     const right = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : left
-    return [left, right]
+    return {
+      channelData: [left, right],
+      sampleRate: buffer.sampleRate,
+    }
   }
 }
 

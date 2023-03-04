@@ -2,29 +2,28 @@ import Fetcher from './fetcher.js'
 import Decoder from './decoder.js'
 import Renderer from './renderer.js'
 import Player from './player.js'
-import UI from './ui.js'
 
 type WaveSurferOptions = {
   container: HTMLElement | string | null
   height?: number
   waveColor?: string
   progressColor?: string
+  minPxPerSec?: number
 }
 
-const defaultOptions: Partial<WaveSurferOptions> = {
+const defaultOptions = {
   height: 128,
   waveColor: '#999',
   progressColor: '#555',
 }
 
 class WaveSurfer {
-  public options: WaveSurferOptions
+  public options: WaveSurferOptions & typeof defaultOptions
   private container: HTMLElement
   private fetcher: Fetcher
   private decoder: Decoder
   private renderer: Renderer
   private player: Player
-  private ui: UI
   private subscriptions: Array<() => void> = []
 
   constructor(options: WaveSurferOptions) {
@@ -38,16 +37,15 @@ class WaveSurfer {
     this.renderer = new Renderer({
       ...defaultOptions,
       container: this.container,
-      height: this.options.height as number,
-      waveColor: this.options.waveColor as string,
-      progressColor: this.options.progressColor as string,
+      height: this.options.height,
+      waveColor: this.options.waveColor,
+      progressColor: this.options.progressColor,
+      minPxPerSec: this.options.minPxPerSec,
     })
-
-    this.ui = new UI({ container: this.container })
 
     // Subscribe to UI events
     // Seek on click
-    this.subscriptions[this.subscriptions.length] = this.ui.subscribe('click', ({ x }) => {
+    this.subscriptions[this.subscriptions.length] = this.renderer.subscribe('click', ({ x }) => {
       const duration = this.player.getDuration()
       const position = duration * x
       this.player.seek(position)
@@ -86,9 +84,9 @@ class WaveSurfer {
 
   public async load(url: string) {
     const audio = await this.fetcher.load(url)
-    const peaks = await this.decoder.decode(audio)
+    const data = await this.decoder.decode(audio)
 
-    this.renderer.render(peaks)
+    this.renderer.render(data.channelData, data.sampleRate)
     this.player.load(url)
   }
 }

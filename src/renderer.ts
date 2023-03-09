@@ -15,7 +15,7 @@ type RendererEvents = {
 class Renderer extends EventBus<RendererEvents> {
   private options: RendererOptions
   private container: HTMLElement
-  private canvas: HTMLCanvasElement
+  private mainCanvas: HTMLCanvasElement
   private progressCanvas: HTMLCanvasElement
   private progressDiv: HTMLElement
 
@@ -24,38 +24,6 @@ class Renderer extends EventBus<RendererEvents> {
 
     this.options = options
 
-    this.container = this.initContainer()
-    this.canvas = this.initCanvas()
-    this.progressCanvas = this.initCanvas()
-    this.progressDiv = this.initProgressDiv()
-
-    this.container.appendChild(this.canvas)
-    this.container.appendChild(this.progressDiv)
-
-    this.canvas.addEventListener('click', (e) => {
-      const rect = this.canvas.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const relativeX = x / rect.width
-      this.emit('click', { relativeX })
-    })
-  }
-
-  destroy() {
-    this.container.remove()
-  }
-
-  private initCanvas(): HTMLCanvasElement {
-    const height = this.options.height
-    const canvas = document.createElement('canvas')
-    const containerWidth = this.container.clientWidth
-    canvas.width = containerWidth * window.devicePixelRatio
-    canvas.height = height
-    canvas.style.width = '100%'
-    canvas.style.height = `${height}px`
-    return canvas
-  }
-
-  private initContainer(): HTMLElement {
     let container: HTMLElement | null = null
     if (typeof this.options.container === 'string') {
       container = document.querySelector(this.options.container)
@@ -67,41 +35,73 @@ class Renderer extends EventBus<RendererEvents> {
     }
 
     const div = document.createElement('div')
-    div.style.position = 'relative'
-    div.style.width = '100%'
-    div.style.height = `${this.options.height}px`
-    div.style.overflow = 'auto'
+    const shadow = div.attachShadow({ mode: 'open' })
+    const { height, progressColor } = this.options
+
+    shadow.innerHTML = `
+      <style>
+        :host > div {
+          position: relative;
+          height: ${height}px;
+          overflow: auto;
+          user-select: none;
+        }
+        :host > div > div {
+          position: absolute;
+          z-index: 2;
+          top: 0;
+          left: 0;
+          width: 0;
+          height: 100%;
+          overflow: hidden;
+          border-right: 1px solid ${progressColor};
+          pointer-events: none;
+        }
+        :host canvas {
+          height: 100%;
+        }
+      </style>
+
+      <div>
+        <canvas height="${height}"></canvas>
+
+        <div>
+          <canvas height="${height}"></canvas>
+        </div>
+      </div>
+    `
+
+    this.container = shadow.querySelector('div')!
+    this.mainCanvas = this.container.querySelector('canvas')!
+    this.progressDiv = this.container.querySelector('div')!
+    this.progressCanvas = this.progressDiv.querySelector('canvas')!
+
     container.appendChild(div)
-    return div
+
+    this.mainCanvas.addEventListener('click', (e) => {
+      const rect = this.mainCanvas.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const relativeX = x / rect.width
+      this.emit('click', { relativeX })
+    })
   }
 
-  private initProgressDiv(): HTMLElement {
-    const div = document.createElement('div')
-    div.style.position = 'absolute'
-    div.style.zIndex = '2'
-    div.style.top = '0'
-    div.style.left = '0'
-    div.style.width = '0'
-    div.style.height = '100%'
-    div.style.overflow = 'hidden'
-    div.style.borderRight = `1px solid ${this.options.progressColor}`
-    div.style.pointerEvents = 'none'
-    div.appendChild(this.progressCanvas)
-    return div
+  destroy() {
+    this.container.remove()
   }
 
   render(channels: [Float32Array, Float32Array], duration: number, minPxPerSec = this.options.minPxPerSec) {
-    const ctx = this.canvas.getContext('2d', { desynchronized: true })!
+    const ctx = this.mainCanvas.getContext('2d', { desynchronized: true })!
     const { devicePixelRatio } = window
 
     const newWidth = Math.max(this.container.clientWidth * devicePixelRatio, duration * minPxPerSec)
 
-    if (newWidth != this.canvas.width) {
-      this.canvas.width = this.progressCanvas.width = newWidth
-      this.canvas.style.width = this.progressCanvas.style.width = Math.round(newWidth / devicePixelRatio) + 'px'
+    if (newWidth != this.mainCanvas.width) {
+      this.mainCanvas.width = this.progressCanvas.width = newWidth
+      this.mainCanvas.style.width = this.progressCanvas.style.width = Math.round(newWidth / devicePixelRatio) + 'px'
     }
 
-    const { width, height } = this.canvas
+    const { width, height } = this.mainCanvas
     let prevX = 0
     let prevY = 0
 
@@ -137,14 +137,14 @@ class Renderer extends EventBus<RendererEvents> {
     ctx.stroke()
 
     const progressCtx = this.progressCanvas.getContext('2d', { desynchronized: true })!
-    progressCtx.drawImage(this.canvas, 0, 0)
+    progressCtx.drawImage(this.mainCanvas, 0, 0)
     progressCtx.globalCompositeOperation = 'source-in'
     progressCtx.fillStyle = this.options.progressColor
     progressCtx.fillRect(0, 0, this.progressCanvas.width, this.progressCanvas.height)
   }
 
   renderProgress(progress: number, autoCenter = false) {
-    const fullWidth = this.canvas.clientWidth
+    const fullWidth = this.mainCanvas.clientWidth
     this.progressCanvas.style.width = fullWidth + 'px'
     this.progressDiv.style.width = `${Math.round(fullWidth * progress)}px`
 

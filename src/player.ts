@@ -1,9 +1,5 @@
 import EventBus from './event-bus.js'
 
-type PlayerOptions = {
-  container: HTMLElement
-}
-
 type PlayerEvents = {
   play: {}
   pause: {}
@@ -13,22 +9,21 @@ type PlayerEvents = {
 class Player extends EventBus<PlayerEvents> {
   public media: HTMLAudioElement
 
-  constructor({ container }: PlayerOptions) {
+  constructor() {
     super()
 
     this.media = document.createElement('audio')
-    container.appendChild(this.media)
 
     this.media.addEventListener('play', () => {
-      this.dispatch('play', {})
+      this.emit('play', {})
     })
 
     this.media.addEventListener('pause', () => {
-      this.dispatch('pause', {})
+      this.emit('pause', {})
     })
 
     this.media.addEventListener('timeupdate', () => {
-      this.dispatch('timeupdate', { currentTime: this.media.currentTime })
+      this.emit('timeupdate', { currentTime: this.media.currentTime })
     })
   }
 
@@ -44,10 +39,24 @@ class Player extends EventBus<PlayerEvents> {
     return this.media.duration
   }
 
+  getCurrentTime() {
+    return this.media.currentTime
+  }
+
   play() {
-    if (this.getDuration()) {
+    if (!this.isPlaying() && this.getDuration()) {
       this.media.play()
     }
+  }
+
+  pause() {
+    if (this.isPlaying()) {
+      this.media.pause()
+    }
+  }
+
+  isPlaying() {
+    return !this.media.paused
   }
 
   seek(time: number) {

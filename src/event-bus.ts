@@ -11,12 +11,12 @@ class EventBus<EventTypes extends GeneralEventTypes> {
     this.eventTarget = new EventTarget()
   }
 
-  dispatch<T extends keyof EventTypes>(eventType: T, detail: EventTypes[T]): void {
+  emit<T extends keyof EventTypes>(eventType: T, detail: EventTypes[T]): void {
     const e = new CustomEvent(String(eventType), { detail })
     this.eventTarget.dispatchEvent(e)
   }
 
-  subscribe<T extends keyof EventTypes>(eventType: T, callback: (detail: EventTypes[T]) => void): () => void {
+  on<T extends keyof EventTypes>(eventType: T, callback: (detail: EventTypes[T]) => void): () => void {
     const handler = (e: Event) => {
       if (e instanceof CustomEvent) {
         callback(e.detail)

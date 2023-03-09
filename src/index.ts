@@ -2,6 +2,8 @@ import Fetcher from './fetcher.js'
 import Decoder from './decoder.js'
 import Renderer from './renderer.js'
 import Player from './player.js'
+import EventBus from './event-bus.js'
+import Timer from './timer.js'
 
 type WaveSurferOptions = {
   container: HTMLElement | string | null
@@ -9,85 +11,144 @@ type WaveSurferOptions = {
   waveColor?: string
   progressColor?: string
   minPxPerSec?: number
+  url?: string
+  channelData?: [Float32Array, Float32Array]
+}
+
+type WaveSurferEvents = {
+  timeupdate: { currentTime: number }
+  seek: { time: number }
 }
 
 const defaultOptions = {
   height: 128,
   waveColor: '#999',
   progressColor: '#555',
+  minPxPerSec: 0,
 }
 
-class WaveSurfer {
+class WaveSurfer extends EventBus<WaveSurferEvents> {
   public options: WaveSurferOptions & typeof defaultOptions
-  private container: HTMLElement
   private fetcher: Fetcher
   private decoder: Decoder
   private renderer: Renderer
   private player: Player
+  private timer: Timer
+
   private subscriptions: Array<() => void> = []
+  private channelData: [Float32Array, Float32Array] | null = null
+  private duration: number | null = null
 
   constructor(options: WaveSurferOptions) {
+    super()
+
     this.options = Object.assign({}, defaultOptions, options)
-    this.container = this.initContainer()
 
     this.fetcher = new Fetcher()
     this.decoder = new Decoder()
-    this.player = new Player({ container: this.container })
+    this.player = new Player()
+    this.timer = new Timer()
 
     this.renderer = new Renderer({
-      ...defaultOptions,
-      container: this.container,
+      container: this.options.container,
       height: this.options.height,
       waveColor: this.options.waveColor,
       progressColor: this.options.progressColor,
       minPxPerSec: this.options.minPxPerSec,
     })
 
-    // Subscribe to UI events
-    // Seek on click
-    this.subscriptions[this.subscriptions.length] = this.renderer.subscribe('click', ({ x }) => {
-      const duration = this.player.getDuration()
-      const position = duration * x
-      this.player.seek(position)
-    })
+    this.initPlayerEvents()
+    this.initRendererEvents()
+    this.initTimerEvents()
 
-    // Subscribe to player events
-    // Update the renderer progress on play
-    this.subscriptions[this.subscriptions.length] = this.player.subscribe('timeupdate', ({ currentTime }) => {
-      const duration = this.player.getDuration()
-      this.renderer.renderProgress(currentTime / duration)
-    })
+    if (this.options.url != null) {
+      this.load(this.options.url, this.options.channelData)
+    }
+  }
+
+  private updateRenderProgress(currentTime: number, autoCenter: boolean) {
+    const duration = this.player.getDuration()
+    this.renderer.renderProgress(currentTime / duration, autoCenter)
+  }
+
+  private initPlayerEvents() {
+    this.subscriptions.push(
+      this.player.on('timeupdate', ({ currentTime }) => {
+        this.updateRenderProgress(currentTime, this.player.isPlaying())
+        this.emit('timeupdate', { currentTime })
+      }),
+    )
+  }
+
+  private initRendererEvents() {
+    // Seek on click
+    this.subscriptions.push(
+      this.renderer.on('click', ({ relativeX }) => {
+        const duration = this.player.getDuration()
+        const time = duration * relativeX
+        this.player.seek(time)
+        this.emit('seek', { time })
+      }),
+    )
+  }
+
+  private initTimerEvents() {
+    this.subscriptions.push(
+      // The timer fires every 16ms for a smooth progress animation
+      this.timer.on('tick', () => {
+        if (this.player.isPlaying()) {
+          const currentTime = this.player.getCurrentTime()
+          this.updateRenderProgress(currentTime, true)
+          this.emit('timeupdate', { currentTime })
+        }
+      }),
+    )
   }
 
   public destroy() {
+    this.subscriptions.forEach((unsubscribe) => unsubscribe())
+    this.timer.destroy()
     this.player.destroy()
     this.renderer.destroy()
-    this.subscriptions.forEach((unsubscribe) => unsubscribe())
-  }
-
-  private initContainer(): HTMLElement {
-    let container: Element | null = null
-    if (typeof this.options.container === 'string') {
-      container = document.querySelector(this.options.container)
-    } else {
-      container = this.options.container
-    }
-    if (!container) {
-      throw new Error('Container not found')
-    }
-    return container as HTMLElement
   }
 
   public static create(options: WaveSurferOptions) {
     return new WaveSurfer(options)
   }
 
-  public async load(url: string) {
-    const audio = await this.fetcher.load(url)
-    const data = await this.decoder.decode(audio)
-
-    this.renderer.render(data.channelData, data.sampleRate)
+  public async load(url: string, channelData?: [Float32Array, Float32Array]) {
     this.player.load(url)
+
+    if (channelData == null) {
+      const audio = await this.fetcher.load(url)
+      const data = await this.decoder.decode(audio)
+      this.channelData = data.channelData
+      this.duration = data.duration
+    } else {
+      this.channelData = channelData
+      this.duration = this.player.getDuration()
+    }
+
+    this.renderer.render(this.channelData, this.duration)
+  }
+
+  public zoom(minPxPerSec: number) {
+    if (this.channelData == null || this.duration == null) {
+      throw new Error('No audio loaded')
+    }
+    this.renderer.render(this.channelData, this.duration, minPxPerSec)
+  }
+
+  public play() {
+    this.player.play()
+  }
+
+  public pause() {
+    this.player.pause()
+  }
+
+  public isPlaying() {
+    return this.player.isPlaying()
   }
 }
 

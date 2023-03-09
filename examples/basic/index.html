@@ -2,15 +2,50 @@
 
 <h1>wavesurfer.js</h1>
 
-<div id="container"></div>
+<h2>Fill container</h2>
+<div id="container-fill"></div>
+<button id="play-fill">Play</button>
+
+<h2>Scroll container</h2>
+<div id="container-scroll"></div>
+Zoom: <input id="zoom" type="range" min="10" max="1000" value="300" />
+<button id="play-scroll">Play</button>
 
 <script type="module">
   import WaveSurfer from '/dist/index.js'
 
-  WaveSurfer.create({
-    container: '#container',
+  const fillWs = WaveSurfer.create({
+    container: '#container-fill',
+    waveColor: 'rgb(200, 0, 200)',
+    progressColor: 'rgb(100, 0, 100)',
+    url: 'http://wavesurfer-js.org/example/media/demo.wav'
+  })
+
+  document.querySelector('#play-fill').addEventListener('click', () => {
+    if (fillWs.isPlaying()) {
+      fillWs.pause()
+    } else {
+      fillWs.play()
+    }
+  })
+
+  const scrollingWs = WaveSurfer.create({
+    container: '#container-scroll',
     waveColor: 'rgb(200, 0, 200)',
     progressColor: 'rgb(100, 0, 100)',
     minPxPerSec: 300,
-  }).load('http://wavesurfer-js.org/example/media/demo.wav')
+    url: 'http://wavesurfer-js.org/example/media/demo.wav'
+  })
+
+  document.querySelector('#zoom').addEventListener('input', e => {
+    scrollingWs.zoom(Number(e.target.value))
+  })
+
+  document.querySelector('#play-scroll').addEventListener('click', () => {
+    if (scrollingWs.isPlaying()) {
+      scrollingWs.pause()
+    } else {
+      scrollingWs.play()
+    }
+  })
 </script>

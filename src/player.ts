@@ -1,37 +1,28 @@
-import EventEmitter from './event-emitter.js'
+class Player {
+  protected media: HTMLMediaElement
+  private isExternalMedia = false
 
-type PlayerEvents = {
-  play: void
-  pause: void
-  timeupdate: { currentTime: number }
-}
+  constructor({ media, mediaType }: { media?: HTMLMediaElement; mediaType?: 'audio' | 'video' }) {
+    if (media) {
+      this.media = media
+      this.isExternalMedia = true
+    } else {
+      this.media = document.createElement(mediaType || 'audio')
+    }
+  }
 
-class Player extends EventEmitter<PlayerEvents> {
-  private media: HTMLAudioElement
-
-  constructor() {
-    super()
-
-    this.media = document.createElement('audio')
-
-    this.media.addEventListener('play', () => {
-      this.emit('play', undefined)
-    })
-
-    this.media.addEventListener('pause', () => {
-      this.emit('pause', undefined)
-    })
-
-    this.media.addEventListener('timeupdate', () => {
-      this.emit('timeupdate', { currentTime: this.media.currentTime })
-    })
+  on(event: keyof HTMLMediaElementEventMap, callback: () => void): () => void {
+    this.media.addEventListener(event, callback)
+    return () => this.media.removeEventListener(event, callback)
   }
 
   destroy() {
-    this.media.remove()
+    if (!this.isExternalMedia) {
+      this.media.remove()
+    }
   }
 
-  load(src: string) {
+  loadUrl(src: string) {
     this.media.src = src
   }
 
@@ -40,25 +31,19 @@ class Player extends EventEmitter<PlayerEvents> {
   }
 
   play() {
-    if (!this.isPlaying()) {
-      this.media.play()
-    }
+    this.media.play()
   }
 
   pause() {
-    if (this.isPlaying()) {
-      this.media.pause()
-    }
+    this.media.pause()
   }
 
   isPlaying() {
-    return !this.media.paused
+    return this.media.currentTime > 0 && !this.media.paused && !this.media.ended
   }
 
   seekTo(time: number) {
-    if (this.media.seekable) {
-      this.media.currentTime = time
-    }
+    this.media.currentTime = time
   }
 }
 

@@ -12,11 +12,11 @@ class Timer extends EventEmitter<TimerEvents> {
 
     this.unsubscribe = this.on('tick', () => {
       requestAnimationFrame(() => {
-        this.emit('tick', undefined)
+        this.emit('tick')
       })
     })
 
-    this.emit('tick', undefined)
+    this.emit('tick')
   }
 
   destroy() {

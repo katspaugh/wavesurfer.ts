@@ -11,7 +11,7 @@ class EventEmitter<EventTypes extends GeneralEventTypes> {
     this.eventTarget = new EventTarget()
   }
 
-  protected emit<T extends keyof EventTypes>(eventType: T, detail: EventTypes[T]): void {
+  protected emit<T extends keyof EventTypes>(eventType: T, detail?: EventTypes[T]): void {
     const e = new CustomEvent(String(eventType), { detail })
     this.eventTarget.dispatchEvent(e)
   }

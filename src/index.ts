@@ -2,9 +2,15 @@ import Fetcher from './fetcher.js'
 import Decoder from './decoder.js'
 import Renderer from './renderer.js'
 import Player from './player.js'
-import EventEmitter, { GeneralEventTypes } from './event-emitter.js'
+import WebAudioPlayer from './player-webaudio.js'
+import EventEmitter, { type GeneralEventTypes } from './event-emitter.js'
 import Timer from './timer.js'
 import BasePlugin from './base-plugin.js'
+
+export enum PlayerType {
+  WebAudio = 'WebAudio',
+  MediaElement = 'MediaElement',
+}
 
 export type WaveSurferOptions = {
   /** HTML element or CSS selector */
@@ -23,19 +29,12 @@ export type WaveSurferOptions = {
   channelData?: Float32Array[]
   /** Pre-computed duration */
   duration?: number
-}
-
-export type WaveSurferEvents = {
-  ready: { duration: number }
-  timeupdate: { currentTime: number }
-  seek: { time: number }
-  play: void
-  pause: void
-}
-
-export type WaveSurferPluginParams = {
-  wavesurfer: WaveSurfer
-  renderer: WaveSurfer['renderer']
+  /** Player "backend", the default is MediaElement  */
+  backend?: PlayerType
+  /** Use an existing media element instead of creating one */
+  media?: HTMLMediaElement
+  /** Media element type, the default is "audio" */
+  mediaType?: 'audio' | 'video'
 }
 
 const defaultOptions = {
@@ -43,17 +42,33 @@ const defaultOptions = {
   waveColor: '#999',
   progressColor: '#555',
   minPxPerSec: 0,
+  backend: 'MediaElement',
+}
+
+export type WaveSurferEvents = {
+  ready: { duration: number }
+  canplay: void
+  play: void
+  pause: void
+  audioprocess: { currentTime: number }
+  seek: { time: number }
+}
+
+export type WaveSurferPluginParams = {
+  wavesurfer: WaveSurfer
+  renderer: WaveSurfer['renderer']
 }
 
 export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
   private options: WaveSurferOptions & typeof defaultOptions
+
   private fetcher: Fetcher
   private decoder: Decoder
   private renderer: Renderer
   private player: Player
   private timer: Timer
-  private plugins: BasePlugin<GeneralEventTypes>[] = []
 
+  private plugins: BasePlugin<GeneralEventTypes>[] = []
   private subscriptions: Array<() => void> = []
   private channelData: Float32Array[] | null = null
   private duration = 0
@@ -71,8 +86,12 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
 
     this.fetcher = new Fetcher()
     this.decoder = new Decoder()
-    this.player = new Player()
     this.timer = new Timer()
+
+    this.player = new (this.options.backend === PlayerType.WebAudio ? WebAudioPlayer : Player)({
+      media: this.options.media,
+      mediaType: this.options.mediaType,
+    })
 
     this.renderer = new Renderer({
       container: this.options.container,
@@ -93,17 +112,26 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
 
   private initPlayerEvents() {
     this.subscriptions.push(
-      this.player.on('timeupdate', ({ currentTime }) => {
+      this.player.on('timeupdate', () => {
+        const currentTime = this.getCurrentTime()
         this.renderer.renderProgress(currentTime / this.duration, this.isPlaying())
-        this.emit('timeupdate', { currentTime })
+        this.emit('audioprocess', { currentTime })
       }),
 
       this.player.on('play', () => {
-        this.emit('play', undefined)
+        this.emit('play')
       }),
 
       this.player.on('pause', () => {
-        this.emit('pause', undefined)
+        this.emit('pause')
+      }),
+
+      this.player.on('canplay', () => {
+        this.emit('canplay')
+      }),
+
+      this.player.on('seeking', () => {
+        this.emit('seek', { time: this.getCurrentTime() })
       }),
     )
   }
@@ -114,7 +142,6 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
       this.renderer.on('click', ({ relativeX }) => {
         const time = this.getDuration() * relativeX
         this.seekTo(time)
-        this.emit('seek', { time })
       }),
     )
   }
@@ -126,7 +153,7 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
         if (this.isPlaying()) {
           const currentTime = this.getCurrentTime()
           this.renderer.renderProgress(currentTime / this.duration, true)
-          this.emit('timeupdate', { currentTime })
+          this.emit('audioprocess', { currentTime })
         }
       }),
     )
@@ -144,7 +171,7 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
 
   /** Load an audio file by URL */
   public async load(url: string, channelData?: Float32Array[], duration?: number) {
-    this.player.load(url)
+    this.player.loadUrl(url)
 
     // Fetch and decode the audio of no pre-computed audio data is provided
     if (channelData == null || duration == null) {
@@ -180,7 +207,7 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
     this.player.pause()
   }
 
-  /** Pause the audio */
+  /** Skip to a time position in seconds */
   public seekTo(time: number) {
     this.player.seekTo(time)
   }

@@ -31,6 +31,10 @@ Zoom: <input id="zoom" type="range" min="10" max="1000" value="300" />
     }
   })
 
+  fillWs.on('seek', ({ time }) => {
+    console.log('Seeking', time)
+  })
+
   const scrollingWs = WaveSurfer.create({
     container: '#container-scroll',
     waveColor: 'rgb(200, 0, 200)',

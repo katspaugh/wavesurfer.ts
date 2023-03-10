@@ -15,6 +15,7 @@ type RendererEvents = {
 class Renderer extends EventEmitter<RendererEvents> {
   private options: RendererOptions
   private container: HTMLElement
+  private shadowRoot: ShadowRoot
   private mainCanvas: HTMLCanvasElement
   private progressCanvas: HTMLCanvasElement
   private cursor: HTMLElement
@@ -40,18 +41,22 @@ class Renderer extends EventEmitter<RendererEvents> {
     shadow.innerHTML = `
       <style>
         :host .scroll {
-          overflow: auto;
+          overflow-x: auto;
+          overflow-y: visible;
           user-select: none;
           width: 100%;
           height: ${this.options.height}px;
+          position: relative;
         }
         :host .wrapper {
           position: relative;
           width: fit-content;
           min-width: 100%;
           height: 100%;
+          z-index: 2;
         }
         :host canvas {
+          display: block;
           height: 100%;
           min-width: 100%;
           image-rendering: pixelated;
@@ -85,6 +90,7 @@ class Renderer extends EventEmitter<RendererEvents> {
     `
 
     this.container = div
+    this.shadowRoot = shadow
     this.mainCanvas = shadow.querySelector('canvas') as HTMLCanvasElement
     this.progressCanvas = shadow.querySelector('.progress') as HTMLCanvasElement
     this.cursor = shadow.querySelector('.cursor') as HTMLElement
@@ -177,6 +183,10 @@ class Renderer extends EventEmitter<RendererEvents> {
         this.container.scrollLeft = fullWidth * progress - center
       }
     }
+  }
+
+  getContainer(): HTMLElement {
+    return this.shadowRoot.querySelector('.scroll') as HTMLElement
   }
 }
 

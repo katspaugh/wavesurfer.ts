@@ -2,8 +2,9 @@ import Fetcher from './fetcher.js'
 import Decoder from './decoder.js'
 import Renderer from './renderer.js'
 import Player from './player.js'
-import EventEmitter from './event-emitter.js'
+import EventEmitter, { GeneralEventTypes } from './event-emitter.js'
 import Timer from './timer.js'
+import BasePlugin from './base-plugin.js'
 
 export type WaveSurferOptions = {
   /** HTML element or CSS selector */
@@ -32,6 +33,11 @@ export type WaveSurferEvents = {
   pause: void
 }
 
+export type WaveSurferPluginParams = {
+  wavesurfer: WaveSurfer
+  renderer: WaveSurfer['renderer']
+}
+
 const defaultOptions = {
   height: 128,
   waveColor: '#999',
@@ -46,6 +52,7 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
   private renderer: Renderer
   private player: Player
   private timer: Timer
+  private plugins: BasePlugin<GeneralEventTypes>[] = []
 
   private subscriptions: Array<() => void> = []
   private channelData: Float32Array[] | null = null
@@ -106,7 +113,7 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
     this.subscriptions.push(
       this.renderer.on('click', ({ relativeX }) => {
         const time = this.getDuration() * relativeX
-        this.player.seek(time)
+        this.seekTo(time)
         this.emit('seek', { time })
       }),
     )
@@ -128,6 +135,7 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
   /** Unmount wavesurfer */
   public destroy() {
     this.subscriptions.forEach((unsubscribe) => unsubscribe())
+    this.plugins.forEach((plugin) => plugin.destroy())
     this.timer.destroy()
     this.player.destroy()
     this.decoder.destroy()
@@ -172,6 +180,11 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
     this.player.pause()
   }
 
+  /** Pause the audio */
+  public seekTo(time: number) {
+    this.player.seekTo(time)
+  }
+
   /** Check if the audio is playing */
   public isPlaying(): boolean {
     return this.player.isPlaying()
@@ -185,6 +198,20 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
   /** Get the current audio position in seconds */
   public getCurrentTime(): number {
     return this.player.getCurrentTime()
+  }
+
+  /** Register and initialize a plugin */
+  public registerPlugin<T extends BasePlugin<GeneralEventTypes>>(
+    CustomPlugin: new (params: WaveSurferPluginParams) => T,
+  ): T {
+    const plugin = new CustomPlugin({
+      wavesurfer: this,
+      renderer: this.renderer,
+    })
+
+    this.plugins.push(plugin)
+
+    return plugin
   }
 }
 

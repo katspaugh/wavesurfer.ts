@@ -55,7 +55,7 @@ class Player extends EventEmitter<PlayerEvents> {
     return !this.media.paused
   }
 
-  seek(time: number) {
+  seekTo(time: number) {
     if (this.media.seekable) {
       this.media.currentTime = time
     }

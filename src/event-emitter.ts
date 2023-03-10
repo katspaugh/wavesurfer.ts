@@ -1,4 +1,4 @@
-interface GeneralEventTypes {
+export interface GeneralEventTypes {
   // the name of the event and the data it dispatches with
   // e.g. 'entryCreated': { count: 1 }
   [eventType: string]: unknown

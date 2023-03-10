@@ -85,9 +85,9 @@ class Renderer extends EventEmitter<RendererEvents> {
     `
 
     this.container = div
-    this.mainCanvas = shadow.querySelector('canvas')!
-    this.progressCanvas = shadow.querySelector('.progress')!
-    this.cursor = shadow.querySelector('.cursor')!
+    this.mainCanvas = shadow.querySelector('canvas') as HTMLCanvasElement
+    this.progressCanvas = shadow.querySelector('.progress') as HTMLCanvasElement
+    this.cursor = shadow.querySelector('.cursor') as HTMLElement
     container.appendChild(div)
 
     this.mainCanvas.addEventListener('click', (e) => {
@@ -103,7 +103,10 @@ class Renderer extends EventEmitter<RendererEvents> {
   }
 
   render(channels: Float32Array[], duration: number, minPxPerSec = this.options.minPxPerSec) {
-    const ctx = this.mainCanvas.getContext('2d', { desynchronized: true })!
+    const ctx = this.mainCanvas.getContext('2d', { desynchronized: true })
+    if (!ctx) {
+      throw new Error('Failed to get canvas context')
+    }
     const { devicePixelRatio } = window
 
     const width = Math.max(this.container.clientWidth * devicePixelRatio, duration * minPxPerSec)
@@ -149,7 +152,10 @@ class Renderer extends EventEmitter<RendererEvents> {
     ctx.stroke()
     ctx.fill()
 
-    const progressCtx = this.progressCanvas.getContext('2d', { desynchronized: true })!
+    const progressCtx = this.progressCanvas.getContext('2d', { desynchronized: true })
+    if (!progressCtx) {
+      throw new Error('Failed to get canvas context')
+    }
     this.progressCanvas.width = this.mainCanvas.width
     this.progressCanvas.height = this.mainCanvas.height
     this.progressCanvas.style.width = this.mainCanvas.style.width

@@ -1,7 +1,7 @@
 import EventEmitter from './event-emitter.js'
 
 type TimerEvents = {
-  tick: {}
+  tick: void
 }
 
 class Timer extends EventEmitter<TimerEvents> {
@@ -12,11 +12,11 @@ class Timer extends EventEmitter<TimerEvents> {
 
     this.unsubscribe = this.on('tick', () => {
       requestAnimationFrame(() => {
-        this.emit('tick', {})
+        this.emit('tick', undefined)
       })
     })
 
-    this.emit('tick', {})
+    this.emit('tick', undefined)
   }
 
   destroy() {

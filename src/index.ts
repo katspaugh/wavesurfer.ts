@@ -49,7 +49,7 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
 
   private subscriptions: Array<() => void> = []
   private channelData: Float32Array[] | null = null
-  private duration: number | null = null
+  private duration = 0
 
   /** Create a new WaveSurfer instance */
   public static create(options: WaveSurferOptions) {
@@ -87,7 +87,7 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
   private initPlayerEvents() {
     this.subscriptions.push(
       this.player.on('timeupdate', ({ currentTime }) => {
-        this.renderer.renderProgress(currentTime / this.duration!, this.isPlaying())
+        this.renderer.renderProgress(currentTime / this.duration, this.isPlaying())
         this.emit('timeupdate', { currentTime })
       }),
 
@@ -118,7 +118,7 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
       this.timer.on('tick', () => {
         if (this.isPlaying()) {
           const currentTime = this.getCurrentTime()
-          this.renderer.renderProgress(currentTime / this.duration!, true)
+          this.renderer.renderProgress(currentTime / this.duration, true)
           this.emit('timeupdate', { currentTime })
         }
       }),
@@ -179,7 +179,7 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
 
   /** Get the duration of the audio in seconds */
   public getDuration(): number {
-    return this.duration || 0
+    return this.duration
   }
 
   /** Get the current audio position in seconds */

@@ -5,7 +5,8 @@ class Decoder {
   audioCtx: AudioContext | null = null
 
   constructor() {
-    this.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({
+    this.audioCtx = new (window.AudioContext ||
+      (window as unknown as { webkitAudioContext: AudioContext }).webkitAudioContext)({
       latencyHint: 'playback',
       sampleRate: SAMPLE_RATE,
     })

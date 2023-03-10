@@ -17,7 +17,7 @@ class Renderer extends EventEmitter<RendererEvents> {
   private container: HTMLElement
   private mainCanvas: HTMLCanvasElement
   private progressCanvas: HTMLCanvasElement
-  private progressDiv: HTMLElement
+  private cursor: HTMLElement
 
   constructor(options: RendererOptions) {
     super()
@@ -36,46 +36,58 @@ class Renderer extends EventEmitter<RendererEvents> {
 
     const div = document.createElement('div')
     const shadow = div.attachShadow({ mode: 'open' })
-    const { height, progressColor } = this.options
 
     shadow.innerHTML = `
       <style>
-        :host {
-          position: relative;
-          height: ${height}px;
+        :host .scroll {
           overflow: auto;
           user-select: none;
+          width: 100%;
+          height: ${this.options.height}px;
         }
-        :host div {
-          position: absolute;
-          z-index: 2;
-          top: 0;
-          left: 0;
-          width: 0;
+        :host .wrapper {
+          position: relative;
+          width: fit-content;
+          min-width: 100%;
           height: 100%;
-          overflow: hidden;
-          border-right: 1px solid ${progressColor};
-          pointer-events: none;
         }
         :host canvas {
           height: 100%;
           min-width: 100%;
           image-rendering: pixelated;
         }
+        :host .progress {
+          position: absolute;
+          z-index: 2;
+          top: 0;
+          left: 0;
+          height: 100%;
+          pointer-events: none;
+          clip-path: inset(100%);
+        }
+        :host .cursor {
+          position: absolute;
+          z-index: 3;
+          top: 0;
+          left: 0;
+          height: 100%;
+          border-right: 1px solid ${this.options.progressColor};
+        }
       </style>
 
-      <canvas height="${height}"></canvas>
-
-      <div>
-        <canvas height="${height}"></canvas>
+      <div class="scroll">
+        <div class="wrapper">
+          <canvas></canvas>
+          <canvas class="progress"></canvas>
+          <div class="cursor"></div>
+        </div>
       </div>
     `
 
     this.container = div
     this.mainCanvas = shadow.querySelector('canvas')!
-    this.progressDiv = shadow.querySelector('div')!
-    this.progressCanvas = this.progressDiv.querySelector('canvas')!
-
+    this.progressCanvas = shadow.querySelector('.progress')!
+    this.cursor = shadow.querySelector('.cursor')!
     container.appendChild(div)
 
     this.mainCanvas.addEventListener('click', (e) => {
@@ -94,14 +106,11 @@ class Renderer extends EventEmitter<RendererEvents> {
     const ctx = this.mainCanvas.getContext('2d', { desynchronized: true })!
     const { devicePixelRatio } = window
 
-    const newWidth = Math.max(this.container.clientWidth * devicePixelRatio, duration * minPxPerSec)
-
-    if (newWidth != this.mainCanvas.width) {
-      this.mainCanvas.width = this.progressCanvas.width = newWidth
-      this.mainCanvas.style.width = this.progressCanvas.style.width = Math.round(newWidth / devicePixelRatio) + 'px'
-    }
-
-    const { width, height } = this.mainCanvas
+    const width = Math.max(this.container.clientWidth * devicePixelRatio, duration * minPxPerSec)
+    const { height } = this.options
+    this.mainCanvas.width = width
+    this.mainCanvas.height = height
+    this.mainCanvas.style.width = Math.round(width / devicePixelRatio) + 'px'
 
     ctx.clearRect(0, 0, width, height)
     ctx.beginPath()
@@ -141,6 +150,10 @@ class Renderer extends EventEmitter<RendererEvents> {
     ctx.fill()
 
     const progressCtx = this.progressCanvas.getContext('2d', { desynchronized: true })!
+    this.progressCanvas.width = this.mainCanvas.width
+    this.progressCanvas.height = this.mainCanvas.height
+    this.progressCanvas.style.width = this.mainCanvas.style.width
+    this.progressCanvas.style.height = this.mainCanvas.style.height
     progressCtx.drawImage(this.mainCanvas, 0, 0)
     progressCtx.globalCompositeOperation = 'source-in'
     progressCtx.fillStyle = this.options.progressColor
@@ -148,13 +161,13 @@ class Renderer extends EventEmitter<RendererEvents> {
   }
 
   renderProgress(progress: number, autoCenter = false) {
-    const fullWidth = this.mainCanvas.clientWidth
-    this.progressCanvas.style.width = fullWidth + 'px'
-    this.progressDiv.style.width = `${Math.round(fullWidth * progress)}px`
+    this.progressCanvas.style.clipPath = `inset(0 ${100 - progress * 100}% 0 0)`
+    this.cursor.style.left = `${progress * 100}%`
 
     if (autoCenter) {
       const center = this.container.clientWidth / 2
-      if (fullWidth * progress >= this.container.clientWidth / 2) {
+      const fullWidth = this.mainCanvas.clientWidth
+      if (fullWidth * progress >= center) {
         this.container.scrollLeft = fullWidth * progress - center
       }
     }

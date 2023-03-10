@@ -11,11 +11,12 @@ class EventEmitter<EventTypes extends GeneralEventTypes> {
     this.eventTarget = new EventTarget()
   }
 
-  emit<T extends keyof EventTypes>(eventType: T, detail: EventTypes[T]): void {
+  protected emit<T extends keyof EventTypes>(eventType: T, detail: EventTypes[T]): void {
     const e = new CustomEvent(String(eventType), { detail })
     this.eventTarget.dispatchEvent(e)
   }
 
+  /** Subscribe to an event and return a function to unsubscribe */
   on<T extends keyof EventTypes>(eventType: T, callback: (detail: EventTypes[T]) => void): () => void {
     const handler = (e: Event) => {
       if (e instanceof CustomEvent) {
@@ -27,7 +28,6 @@ class EventEmitter<EventTypes extends GeneralEventTypes> {
 
     this.eventTarget.addEventListener(eventName, handler)
 
-    // Return an unsubscribe function
     return () => this.eventTarget.removeEventListener(eventName, handler)
   }
 }

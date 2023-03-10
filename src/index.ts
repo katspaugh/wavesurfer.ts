@@ -5,20 +5,31 @@ import Player from './player.js'
 import EventEmitter from './event-emitter.js'
 import Timer from './timer.js'
 
-type WaveSurferOptions = {
+export type WaveSurferOptions = {
+  /** HTML element or CSS selector */
   container: HTMLElement | string | null
+  /** Height of the waveform in pixels */
   height?: number
+  /** The color of the waveform */
   waveColor?: string
+  /** The color of the progress mask */
   progressColor?: string
+  /** Minimum pixels per second of audio (zoom) */
   minPxPerSec?: number
+  /** Audio URL */
   url?: string
+  /** Pre-computed audio data */
   channelData?: Float32Array[]
+  /** Pre-computed duration */
   duration?: number
 }
 
-type WaveSurferEvents = {
+export type WaveSurferEvents = {
+  ready: { duration: number }
   timeupdate: { currentTime: number }
   seek: { time: number }
+  play: void
+  pause: void
 }
 
 const defaultOptions = {
@@ -28,7 +39,7 @@ const defaultOptions = {
   minPxPerSec: 0,
 }
 
-class WaveSurfer extends EventEmitter<WaveSurferEvents> {
+export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
   private options: WaveSurferOptions & typeof defaultOptions
   private fetcher: Fetcher
   private decoder: Decoder
@@ -40,10 +51,12 @@ class WaveSurfer extends EventEmitter<WaveSurferEvents> {
   private channelData: Float32Array[] | null = null
   private duration: number | null = null
 
+  /** Create a new WaveSurfer instance */
   public static create(options: WaveSurferOptions) {
     return new WaveSurfer(options)
   }
 
+  /** Create a new WaveSurfer instance */
   constructor(options: WaveSurferOptions) {
     super()
 
@@ -77,6 +90,14 @@ class WaveSurfer extends EventEmitter<WaveSurferEvents> {
         this.renderer.renderProgress(currentTime / this.duration!, this.isPlaying())
         this.emit('timeupdate', { currentTime })
       }),
+
+      this.player.on('play', () => {
+        this.emit('play', undefined)
+      }),
+
+      this.player.on('pause', () => {
+        this.emit('pause', undefined)
+      }),
     )
   }
 
@@ -84,8 +105,7 @@ class WaveSurfer extends EventEmitter<WaveSurferEvents> {
     // Seek on click
     this.subscriptions.push(
       this.renderer.on('click', ({ relativeX }) => {
-        const duration = this.player.getDuration()
-        const time = duration * relativeX
+        const time = this.getDuration() * relativeX
         this.player.seek(time)
         this.emit('seek', { time })
       }),
@@ -96,8 +116,8 @@ class WaveSurfer extends EventEmitter<WaveSurferEvents> {
     // The timer fires every 16ms for a smooth progress animation
     this.subscriptions.push(
       this.timer.on('tick', () => {
-        if (this.player.isPlaying()) {
-          const currentTime = this.player.getCurrentTime()
+        if (this.isPlaying()) {
+          const currentTime = this.getCurrentTime()
           this.renderer.renderProgress(currentTime / this.duration!, true)
           this.emit('timeupdate', { currentTime })
         }
@@ -105,6 +125,7 @@ class WaveSurfer extends EventEmitter<WaveSurferEvents> {
     )
   }
 
+  /** Unmount wavesurfer */
   public destroy() {
     this.subscriptions.forEach((unsubscribe) => unsubscribe())
     this.timer.destroy()
@@ -113,6 +134,7 @@ class WaveSurfer extends EventEmitter<WaveSurferEvents> {
     this.renderer.destroy()
   }
 
+  /** Load an audio file by URL */
   public async load(url: string, channelData?: Float32Array[], duration?: number) {
     this.player.load(url)
 
@@ -128,8 +150,11 @@ class WaveSurfer extends EventEmitter<WaveSurferEvents> {
     this.duration = duration
 
     this.renderer.render(this.channelData, this.duration)
+
+    this.emit('ready', { duration: this.duration })
   }
 
+  /** Zoom in or out */
   public zoom(minPxPerSec: number) {
     if (this.channelData == null || this.duration == null) {
       throw new Error('No audio loaded')
@@ -137,16 +162,29 @@ class WaveSurfer extends EventEmitter<WaveSurferEvents> {
     this.renderer.render(this.channelData, this.duration, minPxPerSec)
   }
 
+  /** Start playing the audio */
   public play() {
     this.player.play()
   }
 
+  /** Pause the audio */
   public pause() {
     this.player.pause()
   }
 
+  /** Check if the audio is playing */
   public isPlaying(): boolean {
     return this.player.isPlaying()
+  }
+
+  /** Get the duration of the audio in seconds */
+  public getDuration(): number {
+    return this.duration || 0
+  }
+
+  /** Get the current audio position in seconds */
+  public getCurrentTime(): number {
+    return this.player.getCurrentTime()
   }
 }
 

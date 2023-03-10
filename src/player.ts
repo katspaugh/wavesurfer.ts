@@ -1,8 +1,8 @@
 import EventEmitter from './event-emitter.js'
 
 type PlayerEvents = {
-  play: {}
-  pause: {}
+  play: void
+  pause: void
   timeupdate: { currentTime: number }
 }
 
@@ -15,11 +15,11 @@ class Player extends EventEmitter<PlayerEvents> {
     this.media = document.createElement('audio')
 
     this.media.addEventListener('play', () => {
-      this.emit('play', {})
+      this.emit('play', undefined)
     })
 
     this.media.addEventListener('pause', () => {
-      this.emit('pause', {})
+      this.emit('pause', undefined)
     })
 
     this.media.addEventListener('timeupdate', () => {
@@ -35,16 +35,12 @@ class Player extends EventEmitter<PlayerEvents> {
     this.media.src = src
   }
 
-  getDuration() {
-    return this.media.duration
-  }
-
   getCurrentTime() {
     return this.media.currentTime
   }
 
   play() {
-    if (!this.isPlaying() && this.getDuration()) {
+    if (!this.isPlaying()) {
       this.media.play()
     }
   }

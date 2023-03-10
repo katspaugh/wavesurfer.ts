@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc --outDir dist",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint --ext .ts src"
+    "lint": "eslint --ext .ts src",
+    "docs": "npx typedoc src/index.ts"
   },
   "author": "katspaugh <katspaugh@gmail.com>",
   "license": "ISC",
@@ -14,6 +15,7 @@
     "@typescript-eslint/eslint-plugin": "^5.54.0",
     "@typescript-eslint/parser": "^5.54.0",
     "eslint": "^8.35.0",
+    "typedoc": "^0.23.26",
     "typescript": "^4.9.5"
   }
 }

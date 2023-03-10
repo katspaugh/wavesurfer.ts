@@ -2,7 +2,7 @@ import Fetcher from './fetcher.js'
 import Decoder from './decoder.js'
 import Renderer from './renderer.js'
 import Player from './player.js'
-import EventBus from './event-bus.js'
+import EventEmitter from './event-emitter.js'
 import Timer from './timer.js'
 
 type WaveSurferOptions = {
@@ -12,7 +12,8 @@ type WaveSurferOptions = {
   progressColor?: string
   minPxPerSec?: number
   url?: string
-  channelData?: [Float32Array, Float32Array]
+  channelData?: Float32Array[]
+  duration?: number
 }
 
 type WaveSurferEvents = {
@@ -27,8 +28,8 @@ const defaultOptions = {
   minPxPerSec: 0,
 }
 
-class WaveSurfer extends EventBus<WaveSurferEvents> {
-  public options: WaveSurferOptions & typeof defaultOptions
+class WaveSurfer extends EventEmitter<WaveSurferEvents> {
+  private options: WaveSurferOptions & typeof defaultOptions
   private fetcher: Fetcher
   private decoder: Decoder
   private renderer: Renderer
@@ -36,8 +37,12 @@ class WaveSurfer extends EventBus<WaveSurferEvents> {
   private timer: Timer
 
   private subscriptions: Array<() => void> = []
-  private channelData: [Float32Array, Float32Array] | null = null
+  private channelData: Float32Array[] | null = null
   private duration: number | null = null
+
+  public static create(options: WaveSurferOptions) {
+    return new WaveSurfer(options)
+  }
 
   constructor(options: WaveSurferOptions) {
     super()
@@ -62,19 +67,14 @@ class WaveSurfer extends EventBus<WaveSurferEvents> {
     this.initTimerEvents()
 
     if (this.options.url != null) {
-      this.load(this.options.url, this.options.channelData)
+      this.load(this.options.url, this.options.channelData, this.options.duration)
     }
-  }
-
-  private updateRenderProgress(currentTime: number, autoCenter: boolean) {
-    const duration = this.player.getDuration()
-    this.renderer.renderProgress(currentTime / duration, autoCenter)
   }
 
   private initPlayerEvents() {
     this.subscriptions.push(
       this.player.on('timeupdate', ({ currentTime }) => {
-        this.updateRenderProgress(currentTime, this.player.isPlaying())
+        this.renderer.renderProgress(currentTime / this.duration!, this.isPlaying())
         this.emit('timeupdate', { currentTime })
       }),
     )
@@ -93,12 +93,12 @@ class WaveSurfer extends EventBus<WaveSurferEvents> {
   }
 
   private initTimerEvents() {
+    // The timer fires every 16ms for a smooth progress animation
     this.subscriptions.push(
-      // The timer fires every 16ms for a smooth progress animation
       this.timer.on('tick', () => {
         if (this.player.isPlaying()) {
           const currentTime = this.player.getCurrentTime()
-          this.updateRenderProgress(currentTime, true)
+          this.renderer.renderProgress(currentTime / this.duration!, true)
           this.emit('timeupdate', { currentTime })
         }
       }),
@@ -109,25 +109,23 @@ class WaveSurfer extends EventBus<WaveSurferEvents> {
     this.subscriptions.forEach((unsubscribe) => unsubscribe())
     this.timer.destroy()
     this.player.destroy()
+    this.decoder.destroy()
     this.renderer.destroy()
   }
 
-  public static create(options: WaveSurferOptions) {
-    return new WaveSurfer(options)
-  }
-
-  public async load(url: string, channelData?: [Float32Array, Float32Array]) {
+  public async load(url: string, channelData?: Float32Array[], duration?: number) {
     this.player.load(url)
 
-    if (channelData == null) {
+    // Fetch and decode the audio of no pre-computed audio data is provided
+    if (channelData == null || duration == null) {
       const audio = await this.fetcher.load(url)
       const data = await this.decoder.decode(audio)
-      this.channelData = data.channelData
-      this.duration = data.duration
-    } else {
-      this.channelData = channelData
-      this.duration = this.player.getDuration()
+      channelData = data.channelData
+      duration = data.duration
     }
+
+    this.channelData = channelData
+    this.duration = duration
 
     this.renderer.render(this.channelData, this.duration)
   }
@@ -147,7 +145,7 @@ class WaveSurfer extends EventBus<WaveSurferEvents> {
     this.player.pause()
   }
 
-  public isPlaying() {
+  public isPlaying(): boolean {
     return this.player.isPlaying()
   }
 }

@@ -4,7 +4,7 @@ interface GeneralEventTypes {
   [eventType: string]: any
 }
 
-class EventBus<EventTypes extends GeneralEventTypes> {
+class EventEmitter<EventTypes extends GeneralEventTypes> {
   private eventTarget: EventTarget
 
   constructor() {
@@ -32,4 +32,4 @@ class EventBus<EventTypes extends GeneralEventTypes> {
   }
 }
 
-export default EventBus
+export default EventEmitter

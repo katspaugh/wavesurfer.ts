@@ -1,4 +1,4 @@
-import EventBus from './event-bus.js'
+import EventEmitter from './event-emitter.js'
 
 type RendererOptions = {
   container: HTMLElement | string | null
@@ -12,7 +12,7 @@ type RendererEvents = {
   click: { relativeX: number }
 }
 
-class Renderer extends EventBus<RendererEvents> {
+class Renderer extends EventEmitter<RendererEvents> {
   private options: RendererOptions
   private container: HTMLElement
   private mainCanvas: HTMLCanvasElement
@@ -40,13 +40,13 @@ class Renderer extends EventBus<RendererEvents> {
 
     shadow.innerHTML = `
       <style>
-        :host > div {
+        :host {
           position: relative;
           height: ${height}px;
           overflow: auto;
           user-select: none;
         }
-        :host > div > div {
+        :host div {
           position: absolute;
           z-index: 2;
           top: 0;
@@ -59,21 +59,21 @@ class Renderer extends EventBus<RendererEvents> {
         }
         :host canvas {
           height: 100%;
+          min-width: 100%;
+          image-rendering: pixelated;
         }
       </style>
 
+      <canvas height="${height}"></canvas>
+
       <div>
         <canvas height="${height}"></canvas>
-
-        <div>
-          <canvas height="${height}"></canvas>
-        </div>
       </div>
     `
 
-    this.container = shadow.querySelector('div')!
-    this.mainCanvas = this.container.querySelector('canvas')!
-    this.progressDiv = this.container.querySelector('div')!
+    this.container = div
+    this.mainCanvas = shadow.querySelector('canvas')!
+    this.progressDiv = shadow.querySelector('div')!
     this.progressCanvas = this.progressDiv.querySelector('canvas')!
 
     container.appendChild(div)
@@ -90,7 +90,7 @@ class Renderer extends EventBus<RendererEvents> {
     this.container.remove()
   }
 
-  render(channels: [Float32Array, Float32Array], duration: number, minPxPerSec = this.options.minPxPerSec) {
+  render(channels: Float32Array[], duration: number, minPxPerSec = this.options.minPxPerSec) {
     const ctx = this.mainCanvas.getContext('2d', { desynchronized: true })!
     const { devicePixelRatio } = window
 
@@ -102,8 +102,6 @@ class Renderer extends EventBus<RendererEvents> {
     }
 
     const { width, height } = this.mainCanvas
-    let prevX = 0
-    let prevY = 0
 
     ctx.clearRect(0, 0, width, height)
     ctx.beginPath()
@@ -111,6 +109,8 @@ class Renderer extends EventBus<RendererEvents> {
 
     // Draw left channel in the top half of the canvas
     const leftChannel = channels[0]
+    let prevX = -1
+    let prevY = 0
     for (let i = 0; i < leftChannel.length; i++) {
       const x = Math.round((i / leftChannel.length) * width)
       const y = Math.round(((1 - leftChannel[i]) * height) / 2)
@@ -122,19 +122,23 @@ class Renderer extends EventBus<RendererEvents> {
     }
 
     // Draw right channel in the bottom half of the canvas
-    const rightChannel = channels[1]
+    const isMono = channels.length === 1
+    const rightChannel = isMono ? leftChannel : channels[1]
+    prevX = -1
+    prevY = 0
     for (let i = rightChannel.length - 1; i >= 0; i--) {
       const x = Math.round((i / rightChannel.length) * width)
       const y = Math.round(((1 + rightChannel[i]) * height) / 2)
-      if (x !== prevX || y > prevY) {
+      if (x !== prevX || (isMono ? y < -prevY : y > prevY)) {
         ctx.lineTo(x, y)
         prevX = x
         prevY = y
       }
     }
 
-    ctx.strokeStyle = this.options.waveColor
+    ctx.strokeStyle = ctx.fillStyle = this.options.waveColor
     ctx.stroke()
+    ctx.fill()
 
     const progressCtx = this.progressCanvas.getContext('2d', { desynchronized: true })!
     progressCtx.drawImage(this.mainCanvas, 0, 0)

@@ -1,4 +1,4 @@
-import EventBus from './event-bus.js'
+import EventEmitter from './event-emitter.js'
 
 type PlayerEvents = {
   play: {}
@@ -6,8 +6,8 @@ type PlayerEvents = {
   timeupdate: { currentTime: number }
 }
 
-class Player extends EventBus<PlayerEvents> {
-  public media: HTMLAudioElement
+class Player extends EventEmitter<PlayerEvents> {
+  private media: HTMLAudioElement
 
   constructor() {
     super()

@@ -1,10 +1,10 @@
-import EventBus from './event-bus.js'
+import EventEmitter from './event-emitter.js'
 
 type TimerEvents = {
   tick: {}
 }
 
-class Timer extends EventBus<TimerEvents> {
+class Timer extends EventEmitter<TimerEvents> {
   private unsubscribe: () => void = () => undefined
 
   constructor() {

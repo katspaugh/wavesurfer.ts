@@ -24,7 +24,7 @@ wsRegions.on('region-clicked', ({ region }) => {
   activeRegion = region
 })
 
-ws.on('timeupdate', ({ currentTime }) => {
+ws.on('audioprocess', ({ currentTime }) => {
   if (activeRegion && (currentTime >= activeRegion.endTime)) {
     ws.pause()
     ws.seekTo(activeRegion.endTime)

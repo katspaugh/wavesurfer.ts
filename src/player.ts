@@ -2,12 +2,12 @@ class Player {
   protected media: HTMLMediaElement
   private isExternalMedia = false
 
-  constructor({ media, mediaType }: { media?: HTMLMediaElement; mediaType?: 'audio' | 'video' }) {
+  constructor({ media }: { media?: HTMLMediaElement }) {
     if (media) {
       this.media = media
       this.isExternalMedia = true
     } else {
-      this.media = document.createElement(mediaType || 'audio')
+      this.media = document.createElement('audio')
     }
   }
 

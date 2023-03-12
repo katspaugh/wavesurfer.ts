@@ -1,4 +1,4 @@
-import { initEditor, sessionRestore, sessionSave, setContent, getContent } from './editor.js'
+import { initEditor, setContent, getContent } from './editor.js'
 
 const onSetContent = () => {
   const code = getContent()
@@ -49,17 +49,18 @@ const init = () => {
       }
       currentLink = e.target
       currentLink.classList.add('active')
+
+      window.location.hash = e.target.pathname
     }
   })
 
-  if (true) { // if (!sessionRestore()) {
-    document.querySelector('a[href$="examples/basic.js"]').click()
+  const { hash } = window.location
+  let url = '/examples/basic.js'
+  if (hash && /^#\/examples\/.+?\.js$/.test(hash)) {
+    url = hash.slice(1)
   }
+  document.querySelector(`a[href="${url}"]`).click()
 }
-
-window.addEventListener('unload', () => {
-  sessionSave()
-})
 
 initEditor(onSetContent)
 init()

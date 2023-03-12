@@ -33,8 +33,6 @@ export type WaveSurferOptions = {
   backend?: PlayerType
   /** Use an existing media element instead of creating one */
   media?: HTMLMediaElement
-  /** Media element type, the default is "audio" */
-  mediaType?: 'audio' | 'video'
 }
 
 const defaultOptions = {
@@ -90,7 +88,6 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
 
     this.player = new (this.options.backend === PlayerType.WebAudio ? WebAudioPlayer : Player)({
       media: this.options.media,
-      mediaType: this.options.mediaType,
     })
 
     this.renderer = new Renderer({
@@ -105,8 +102,9 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
     this.initRendererEvents()
     this.initTimerEvents()
 
-    if (this.options.url != null) {
-      this.load(this.options.url, this.options.channelData, this.options.duration)
+    const url = this.options.url || this.options.media?.src
+    if (url) {
+      this.load(url, this.options.channelData, this.options.duration)
     }
   }
 

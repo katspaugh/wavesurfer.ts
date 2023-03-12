@@ -16,6 +16,8 @@ const fetchCode = async (url) => {
   return fetch(url).then((res) => res.text())
 }
 
+const mobileDetect = () => window.innerWidth <= 768
+
 export const initEditor = (onSetContent) => {
   require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.32.0-dev.20211218/min/vs' } });
 
@@ -53,7 +55,14 @@ export const initEditor = (onSetContent) => {
         autoClosingBrackets: false,
         minimap: { enabled: false },
         tabSize: 2,
-        theme
+        theme,
+        ...mobileDetect() && {
+          glyphMargin: false,
+          folding: false,
+          lineNumbers: 'off',
+          lineDecorationsWidth: 0,
+          lineNumbersMinChars: 0,
+        },
 	    });
 
       let debounce

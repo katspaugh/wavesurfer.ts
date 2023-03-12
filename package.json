@@ -1,15 +1,19 @@
 {
   "name": "wavesurfer.js",
-  "version": "7.0.0-alpha.1",
-  "description": "",
+  "version": "7.0.0-alpha.2",
+  "description": "wavesurfer.js is an audio library that draws waveforms and plays audio in the browser.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": ["dist/"],
   "scripts": {
-    "build": "tsc",
+    "build:dev": "tsc -w",
+    "build:umd": "webpack && webpack --config webpack.config.plugins.js",
+    "prepublishOnly": "npm run build:umd",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --ext .ts src --fix",
     "prettier": "prettier -w src",
-    "docs": "npx typedoc src/index.ts"
+    "docs": "npx typedoc src/index.ts",
+    "serve": "python3 -m http.server --cgi 8080"
   },
   "author": "katspaugh <katspaugh@gmail.com>",
   "license": "ISC",
@@ -20,7 +24,11 @@
     "eslint-config-prettier": "^8.7.0",
     "eslint-plugin-prettier": "^4.2.1",
     "prettier": "^2.8.4",
+    "ts-loader": "^9.4.2",
     "typedoc": "^0.23.26",
-    "typescript": "^4.9.5"
-  }
+    "typescript": "^4.9.5",
+    "webpack": "^5.76.1",
+    "webpack-cli": "^5.0.1"
+  },
+  "dependencies": {}
 }

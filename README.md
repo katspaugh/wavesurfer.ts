@@ -33,7 +33,7 @@ yarn
 Start the TypeScript compiler in watch mode:
 
 ```
-yarn build -w
+yarn build:dev
 ```
 
 Run an HTTP server to view the examples:
@@ -42,7 +42,7 @@ Run an HTTP server to view the examples:
 python3 -m http.server --cgi 8080
 ```
 
-Open http://localhost:8080/examples/basic/ in your browser.
+Open http://localhost:8080/tutorial in your browser.
 There's no hot reload yet, so you'll need to reload the page manually on every change.
 
 ## Feedback

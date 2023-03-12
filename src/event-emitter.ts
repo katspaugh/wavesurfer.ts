@@ -30,6 +30,15 @@ class EventEmitter<EventTypes extends GeneralEventTypes> {
 
     return () => this.eventTarget.removeEventListener(eventName, handler)
   }
+
+  /** Subscribe to an event once and return a function to unsubscribe */
+  once<T extends keyof EventTypes>(eventType: T, callback: (detail: EventTypes[T]) => void): () => void {
+    const unsubscribe = this.on(eventType, (...args) => {
+      unsubscribe()
+      callback(...args)
+    })
+    return unsubscribe
+  }
 }
 
 export default EventEmitter

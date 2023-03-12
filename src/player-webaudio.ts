@@ -17,8 +17,7 @@ class WebAudioPlayer extends Player {
     super.loadUrl(url)
 
     if (!this.audioCtx) {
-      this.audioCtx = new (window.AudioContext ||
-        (window as unknown as { webkitAudioContext: AudioContext }).webkitAudioContext)({
+      this.audioCtx = new AudioContext({
         latencyHint: 'playback',
       })
     }

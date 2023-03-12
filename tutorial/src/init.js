@@ -52,7 +52,7 @@ const init = () => {
     }
   })
 
-  if (!sessionRestore()) {
+  if (true) { // if (!sessionRestore()) {
     document.querySelector('a[href$="examples/basic.js"]').click()
   }
 }

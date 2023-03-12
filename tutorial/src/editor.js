@@ -26,7 +26,7 @@ export const initEditor = (onSetContent) => {
     }
 
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      lib: [ 'es2015', 'dom' ],
+      lib: [ 'es2019', 'dom' ],
       allowJs: true,
       allowNonTsExtensions: true,
       baseUrl: window.location.origin,

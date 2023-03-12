@@ -1,8 +1,9 @@
 {
-  "name": "wavesurfer-ts",
-  "version": "1.0.0",
+  "name": "wavesurfer.js",
+  "version": "7.0.0-alpha.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",

@@ -132,6 +132,18 @@ header h1 {
   font-size: inherit;
 }
 
+header a,
+header a:hover,
+footer a,
+footer a:hover {
+  color: #fff;
+}
+
+header a:hover,
+footer a:hover {
+  text-decoration: none;
+}
+
 footer {
   padding: 1em;
   text-align: center;
@@ -139,10 +151,6 @@ footer {
   font-size: 12px;
   color: #ccc;
   background: linear-gradient(to left, #3a6186, #89253e);
-}
-
-footer a {
-  color: #fff;
 }
 
 .github {

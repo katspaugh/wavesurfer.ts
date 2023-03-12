@@ -21,6 +21,12 @@ export type WaveSurferOptions = {
   waveColor?: string
   /** The color of the progress mask */
   progressColor?: string
+  /** If set, the waveform will be rendered in bars like so: ▁ ▂ ▇ ▃ ▅ ▂ */
+  barWidth?: number
+  /** Spacing between bars in pixels */
+  barGap?: number
+  /** Rounded borders for bars */
+  barRadius?: number
   /** Minimum pixels per second of audio (zoom) */
   minPxPerSec?: number
   /** Audio URL */
@@ -96,6 +102,9 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
       waveColor: this.options.waveColor,
       progressColor: this.options.progressColor,
       minPxPerSec: this.options.minPxPerSec,
+      barWidth: this.options.barWidth,
+      barGap: this.options.barGap,
+      barRadius: this.options.barRadius,
     })
 
     this.initPlayerEvents()

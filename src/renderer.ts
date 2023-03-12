@@ -6,6 +6,9 @@ type RendererOptions = {
   waveColor: string
   progressColor: string
   minPxPerSec: number
+  barWidth?: number
+  barGap?: number
+  barRadius?: number
 }
 
 type RendererEvents = {
@@ -19,6 +22,7 @@ class Renderer extends EventEmitter<RendererEvents> {
   private mainCanvas: HTMLCanvasElement
   private progressCanvas: HTMLCanvasElement
   private cursor: HTMLElement
+  private ctx: CanvasRenderingContext2D
 
   constructor(options: RendererOptions) {
     super()
@@ -92,6 +96,7 @@ class Renderer extends EventEmitter<RendererEvents> {
     this.container = div
     this.shadowRoot = shadow
     this.mainCanvas = shadow.querySelector('canvas') as HTMLCanvasElement
+    this.ctx = this.mainCanvas.getContext('2d', { desynchronized: true }) as CanvasRenderingContext2D
     this.progressCanvas = shadow.querySelector('.progress') as HTMLCanvasElement
     this.cursor = shadow.querySelector('.cursor') as HTMLElement
     container.appendChild(div)
@@ -108,28 +113,21 @@ class Renderer extends EventEmitter<RendererEvents> {
     this.container.remove()
   }
 
-  render(channels: Float32Array[], duration: number, minPxPerSec = this.options.minPxPerSec) {
-    const ctx = this.mainCanvas.getContext('2d', { desynchronized: true })
-    if (!ctx) {
-      throw new Error('Failed to get canvas context')
-    }
-    const { devicePixelRatio } = window
-
-    const width = Math.max(this.container.clientWidth * devicePixelRatio, duration * minPxPerSec)
-    const { height } = this.options
-    this.mainCanvas.width = width
-    this.mainCanvas.height = height
-    this.mainCanvas.style.width = Math.round(width / devicePixelRatio) + 'px'
-
+  private renderLinePeaks(channelData: Float32Array[], width: number, height: number) {
+    const { ctx } = this
     ctx.clearRect(0, 0, width, height)
     ctx.beginPath()
     ctx.moveTo(0, height / 2)
 
+    // Channel 0 is left, 1 is right
+    const leftChannel = channelData[0]
+    const isMono = channelData.length === 1
+    const rightChannel = isMono ? leftChannel : channelData[1]
+
     // Draw left channel in the top half of the canvas
-    const leftChannel = channels[0]
     let prevX = -1
     let prevY = 0
-    for (let i = 0; i < leftChannel.length; i++) {
+    for (let i = 0, len = leftChannel.length; i < len; i++) {
       const x = Math.round((i / leftChannel.length) * width)
       const y = Math.round(((1 - leftChannel[i]) * height) / 2)
       if (x !== prevX || y > prevY) {
@@ -140,8 +138,6 @@ class Renderer extends EventEmitter<RendererEvents> {
     }
 
     // Draw right channel in the bottom half of the canvas
-    const isMono = channels.length === 1
-    const rightChannel = isMono ? leftChannel : channels[1]
     prevX = -1
     prevY = 0
     for (let i = rightChannel.length - 1; i >= 0; i--) {
@@ -157,7 +153,68 @@ class Renderer extends EventEmitter<RendererEvents> {
     ctx.strokeStyle = ctx.fillStyle = this.options.waveColor
     ctx.stroke()
     ctx.fill()
+  }
 
+  private renderBarPeaks(channelData: Float32Array[], width: number, height: number) {
+    const { devicePixelRatio } = window
+    const { ctx } = this
+    ctx.clearRect(0, 0, width, height)
+
+    const barWidthOption = this.options.barWidth || 1
+    const barWidth = barWidthOption * devicePixelRatio
+    const barGap = (this.options.barGap ?? barWidthOption / 2) * devicePixelRatio
+    const barRadius = this.options.barRadius ?? 0
+
+    const leftChannel = channelData[0]
+    const isMono = channelData.length === 1
+    const rightChannel = isMono ? leftChannel : channelData[1]
+
+    const barCount = Math.floor(width / (barWidth + barGap))
+
+    const leftChannelBars = new Float32Array(barCount)
+    const rightChannelBars = new Float32Array(barCount)
+
+    const barIndexScale = barCount / leftChannel.length
+    const leftChannelLength = leftChannel.length
+    for (let i = 0; i < leftChannelLength; i++) {
+      const barIndex = Math.round(i * barIndexScale)
+      leftChannelBars[barIndex] = Math.max(leftChannelBars[barIndex], leftChannel[i])
+      rightChannelBars[barIndex] = (isMono ? Math.min : Math.max)(rightChannelBars[barIndex], rightChannel[i])
+    }
+
+    ctx.beginPath()
+
+    for (let i = 0; i < barCount; i++) {
+      const leftBarHeight = Math.max(1, Math.round((leftChannelBars[i] * height) / 2))
+      const rightBarHeight = Math.max(1, Math.round(Math.abs(rightChannelBars[i] * height) / 2))
+
+      ctx.roundRect(
+        i * (barWidth + barGap),
+        height / 2 - leftBarHeight,
+        barWidth,
+        leftBarHeight + rightBarHeight,
+        barRadius,
+      )
+    }
+
+    ctx.fillStyle = this.options.waveColor
+    ctx.fill()
+  }
+
+  render(channelData: Float32Array[], duration: number, minPxPerSec = this.options.minPxPerSec) {
+    const { devicePixelRatio } = window
+    const width = Math.max(this.container.clientWidth * devicePixelRatio, duration * minPxPerSec)
+    const { height } = this.options
+    this.mainCanvas.width = width
+    this.mainCanvas.height = height
+    this.mainCanvas.style.width = Math.round(width / devicePixelRatio) + 'px'
+
+    const renderingFn = this.options.barWidth ? this.renderBarPeaks : this.renderLinePeaks
+    renderingFn.call(this, channelData, width, height)
+    this.createProgressMask()
+  }
+
+  private createProgressMask() {
     const progressCtx = this.progressCanvas.getContext('2d', { desynchronized: true })
     if (!progressCtx) {
       throw new Error('Failed to get canvas context')

@@ -26,7 +26,7 @@ export const initEditor = (onSetContent) => {
     }
 
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      lib: [ 'DOM', 'ES2016' ],
+      lib: [ 'es2015', 'dom' ],
       allowJs: true,
       allowNonTsExtensions: true,
       baseUrl: window.location.origin,
@@ -35,6 +35,7 @@ export const initEditor = (onSetContent) => {
 
     const libs = [
       '/dist/index.d.ts',
+      '/dist/event-emitter.d.ts',
       '/dist/plugins/regions.d.ts',
     ]
 
@@ -47,6 +48,7 @@ export const initEditor = (onSetContent) => {
     }).then(() => {
 	    const monacoEditor = monaco.editor.create(document.getElementById('editor'), {
 		    language: 'typescript',
+        quickSuggestions: true,
         automaticLayout: true,
         autoClosingBrackets: false,
         minimap: { enabled: false },

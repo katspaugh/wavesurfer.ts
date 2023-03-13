@@ -1,6 +1,6 @@
 {
   "name": "wavesurfer.js",
-  "version": "7.0.0-alpha.2",
+  "version": "7.0.0-alpha.3",
   "description": "wavesurfer.js is an audio library that draws waveforms and plays audio in the browser.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

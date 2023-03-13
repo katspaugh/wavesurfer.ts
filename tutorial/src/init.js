@@ -1,4 +1,5 @@
 import { initEditor, setContent, getContent } from './editor.js'
+import { getLastCode, setLastCode } from './storage.js'
 
 const onSetContent = () => {
   const code = getContent()
@@ -35,14 +36,35 @@ const fetchContent = async (url) => {
 }
 
 const init = () => {
-  let currentLink = null
+  const sandboxUrl = '/examples/sandbox.js'
+  const introUrl = '/examples/intro.js'
 
+  const saveCode = () => {
+    const { hash } = window.location
+    if (hash === `#${sandboxUrl}`) {
+      setLastCode(getContent())
+    }
+  }
+
+  // Load the example code on menu click
+  let currentLink = null
   document.addEventListener('click', (e) => {
-    const url = e.target.href
+    const url = e.target.pathname
+
     if (url && url.endsWith('.js')) {
       e.preventDefault()
 
-      fetchContent(url).then(setContent)
+      if (url === sandboxUrl) {
+        const saved = getLastCode()
+        if (saved) {
+          setContent(saved)
+        } else {
+          fetchContent(url).then(setContent)
+        }
+      } else {
+        saveCode()
+        fetchContent(url).then(setContent)
+      }
 
       if (currentLink) {
         currentLink.classList.remove('active')
@@ -50,17 +72,23 @@ const init = () => {
       currentLink = e.target
       currentLink.classList.add('active')
 
-      window.location.hash = e.target.pathname
+      window.location.hash = url
     }
   })
 
+  // Open the example from the URL hash, or the default one
   const { hash } = window.location
-  let url = '/examples/basic.js'
+  let initialUrl = introUrl
   if (hash && /^#\/examples\/.+?\.js$/.test(hash)) {
-    url = hash.slice(1)
+    initialUrl = hash.slice(1)
   }
-  document.querySelector(`a[href="${url}"]`).click()
+  document.querySelector(`a[href="${initialUrl}"]`).click()
+
+  // Save the code on window unload
+  window.addEventListener('unload', saveCode)
+
+  // Init the Monaco editor
+  initEditor(onSetContent)
 }
 
-initEditor(onSetContent)
 init()

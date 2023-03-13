@@ -1,3 +1,5 @@
+// Fancy gradients
+
 import WaveSurfer from '/dist/index.js'
 
 // Create a canvas gradient

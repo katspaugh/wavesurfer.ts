@@ -1,3 +1,5 @@
+// Web Audio MediaStreamAudioSourceNode
+
 import WaveSurfer from '/dist/index.js'
 
 const audio = new Audio()

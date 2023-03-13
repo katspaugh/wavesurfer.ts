@@ -1,3 +1,5 @@
+// SoundCloud-style bars
+
 import WaveSurfer from '/dist/index.js'
 
 const wavesurfer = WaveSurfer.create({

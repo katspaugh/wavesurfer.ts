@@ -1,7 +1,10 @@
+// Waveform for a video
+
 import WaveSurfer from '/dist/index.js'
 
 // Create a video element and add it to the DOM.
-// The video can also be defined in HTML, in which case we just get it by a selector.
+// The video can also be defined in HTML,
+// in which case we just get it by a selector.
 const video = document.createElement('video')
 video.crossOrigin = 'anonymous'
 video.controls = true

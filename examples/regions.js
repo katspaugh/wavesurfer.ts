@@ -1,3 +1,5 @@
+// Regions plugin
+
 import WaveSurfer from '/dist/index.js'
 import RegionsPlugin from '/dist/plugins/regions.js'
 

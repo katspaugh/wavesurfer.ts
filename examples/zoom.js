@@ -1,3 +1,5 @@
+// Zooming the waveform
+
 import WaveSurfer from '/dist/index.js'
 
 const wavesurfer = WaveSurfer.create({
@@ -8,14 +10,17 @@ const wavesurfer = WaveSurfer.create({
   minPxPerSec: 10,
 })
 
+// Create a simple slider
 const slider = document.createElement('input')
 slider.type = 'range'
 slider.min = 10
 slider.max = 1000
 document.body.appendChild(slider)
 
-wavesurfer.once('ready', () => {
+// Update the zoom level on slider change
+wavesurfer.on('ready', () => {
   slider.addEventListener('input', function () {
-    wavesurfer.zoom(Number(this.value))
+    const zoomLevel = Number(this.value)
+    wavesurfer.zoom(zoomLevel)
   })
 })

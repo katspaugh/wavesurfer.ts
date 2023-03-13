@@ -18,7 +18,7 @@ type RendererEvents = {
 class Renderer extends EventEmitter<RendererEvents> {
   private options: RendererOptions
   private container: HTMLElement
-  private shadowRoot: ShadowRoot
+  private scrollContainer: HTMLElement
   private mainCanvas: HTMLCanvasElement
   private progressCanvas: HTMLCanvasElement
   private cursor: HTMLElement
@@ -94,7 +94,7 @@ class Renderer extends EventEmitter<RendererEvents> {
     `
 
     this.container = div
-    this.shadowRoot = shadow
+    this.scrollContainer = shadow.querySelector('.scroll') as HTMLElement
     this.mainCanvas = shadow.querySelector('canvas') as HTMLCanvasElement
     this.ctx = this.mainCanvas.getContext('2d', { desynchronized: true }) as CanvasRenderingContext2D
     this.progressCanvas = shadow.querySelector('.progress') as HTMLCanvasElement
@@ -201,19 +201,6 @@ class Renderer extends EventEmitter<RendererEvents> {
     ctx.fill()
   }
 
-  render(channelData: Float32Array[], duration: number, minPxPerSec = this.options.minPxPerSec) {
-    const { devicePixelRatio } = window
-    const width = Math.max(this.container.clientWidth * devicePixelRatio, duration * minPxPerSec)
-    const { height } = this.options
-    this.mainCanvas.width = width
-    this.mainCanvas.height = height
-    this.mainCanvas.style.width = Math.round(width / devicePixelRatio) + 'px'
-
-    const renderingFn = this.options.barWidth ? this.renderBarPeaks : this.renderLinePeaks
-    renderingFn.call(this, channelData, width, height)
-    this.createProgressMask()
-  }
-
   private createProgressMask() {
     const progressCtx = this.progressCanvas.getContext('2d', { desynchronized: true })
     if (!progressCtx) {
@@ -229,6 +216,31 @@ class Renderer extends EventEmitter<RendererEvents> {
     progressCtx.fillRect(0, 0, this.progressCanvas.width, this.progressCanvas.height)
   }
 
+  render(channelData: Float32Array[], duration: number) {
+    const { devicePixelRatio } = window
+    const width = Math.max(this.container.clientWidth * devicePixelRatio, duration * this.options.minPxPerSec)
+    const { height } = this.options
+    this.mainCanvas.width = width
+    this.mainCanvas.height = height
+    this.mainCanvas.style.width = Math.round(width / devicePixelRatio) + 'px'
+
+    const renderingFn = this.options.barWidth ? this.renderBarPeaks : this.renderLinePeaks
+    renderingFn.call(this, channelData, width, height)
+    this.createProgressMask()
+  }
+
+  zoom(channelData: Float32Array[], duration: number, minPxPerSec: number) {
+    // Remember the current cursor position
+    const oldCursorPosition = this.cursor.getBoundingClientRect().left
+
+    this.options.minPxPerSec = minPxPerSec
+    this.render(channelData, duration)
+
+    // Adjust the scroll position so that the cursor stays in the same place
+    const newCursortPosition = this.cursor.getBoundingClientRect().left
+    this.scrollContainer.scrollLeft += newCursortPosition - oldCursorPosition
+  }
+
   renderProgress(progress: number, autoCenter = false) {
     this.progressCanvas.style.clipPath = `inset(0 ${100 - progress * 100}% 0 0)`
     this.cursor.style.left = `${progress * 100}%`
@@ -237,13 +249,13 @@ class Renderer extends EventEmitter<RendererEvents> {
       const center = this.container.clientWidth / 2
       const fullWidth = this.mainCanvas.clientWidth
       if (fullWidth * progress >= center) {
-        this.container.scrollLeft = fullWidth * progress - center
+        this.scrollContainer.scrollLeft = fullWidth * progress - center
       }
     }
   }
 
   getContainer(): HTMLElement {
-    return this.shadowRoot.querySelector('.scroll') as HTMLElement
+    return this.scrollContainer as HTMLElement
   }
 }
 

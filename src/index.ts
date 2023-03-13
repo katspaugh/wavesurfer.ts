@@ -201,8 +201,7 @@ export class WaveSurfer extends EventEmitter<WaveSurferEvents> {
     if (this.channelData == null || this.duration == null) {
       throw new Error('No audio loaded')
     }
-    this.renderer.render(this.channelData, this.duration, minPxPerSec)
-    this.renderer.renderProgress(this.getCurrentTime() / this.duration, true)
+    this.renderer.zoom(this.channelData, this.duration, minPxPerSec)
   }
 
   /** Start playing the audio */

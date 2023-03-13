@@ -9,6 +9,7 @@ export const setContent = (newContent) => {
     setTimeout(() => setContent(newContent), 10)
   } else {
     editor.getModel().setValue(newContent)
+    editor.setScrollPosition({ scrollTop: 0 })
   }
 }
 
@@ -52,6 +53,7 @@ export const initEditor = (onSetContent) => {
 		    language: 'typescript',
         quickSuggestions: true,
         automaticLayout: true,
+        scrollBeyondLastLine: false,
         autoClosingBrackets: false,
         minimap: { enabled: false },
         tabSize: 2,

@@ -11,16 +11,17 @@ const wavesurfer = WaveSurfer.create({
 })
 
 // Create a simple slider
-const slider = document.createElement('input')
-slider.type = 'range'
-slider.min = 10
-slider.max = 1000
-document.body.appendChild(slider)
+/*
+<html>
+  <input type="range" min="10" max="1000" />
+</html>
+*/
+const slider = document.querySelector('input')
 
 // Update the zoom level on slider change
 wavesurfer.on('ready', () => {
   slider.addEventListener('input', function () {
-    const zoomLevel = Number(this.value)
-    wavesurfer.zoom(zoomLevel)
+    const minPxPerSec = Number(this.value)
+    wavesurfer.zoom(minPxPerSec)
   })
 })

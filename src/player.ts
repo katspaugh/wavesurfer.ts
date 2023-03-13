@@ -1,5 +1,5 @@
 class Player {
-  protected media: HTMLMediaElement
+  protected media: HTMLMediaElement | null = null
   private isExternalMedia = false
 
   constructor({ media }: { media?: HTMLMediaElement }) {
@@ -12,38 +12,46 @@ class Player {
   }
 
   on(event: keyof HTMLMediaElementEventMap, callback: () => void): () => void {
-    this.media.addEventListener(event, callback)
-    return () => this.media.removeEventListener(event, callback)
+    this.media?.addEventListener(event, callback)
+    return () => this.media?.removeEventListener(event, callback)
   }
 
   destroy() {
+    this.media?.pause()
+
     if (!this.isExternalMedia) {
-      this.media.remove()
+      this.media?.remove()
+      this.media = null
     }
   }
 
   loadUrl(src: string) {
-    this.media.src = src
+    if (this.media) {
+      this.media.src = src
+    }
   }
 
   getCurrentTime() {
-    return this.media.currentTime
+    return this.media?.currentTime || 0
   }
 
   play() {
-    this.media.play()
+    this.media?.play()
   }
 
   pause() {
-    this.media.pause()
+    this.media?.pause()
   }
 
   isPlaying() {
+    if (!this.media) return false
     return this.media.currentTime > 0 && !this.media.paused && !this.media.ended
   }
 
   seekTo(time: number) {
-    this.media.currentTime = time
+    if (this.media) {
+      this.media.currentTime = time
+    }
   }
 }
 

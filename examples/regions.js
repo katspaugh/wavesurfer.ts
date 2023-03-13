@@ -54,12 +54,15 @@ ws.on('audioprocess', ({ currentTime }) => {
 })
 
 // Toggle looping with a checkbox
-const p = document.createElement('p')
-p.innerHTML = `
-  <label>
-    <input type="checkbox" checked="${loop}" style="vertical-align: text-top" />
-    Loop regions on click
-  </label>
-`
-document.body.appendChild(p)
+/*
+  <html>
+    <div style="margin-bottom: 1em">
+      <label>
+        <input type="checkbox" checked="${loop}" style="vertical-align: text-top" />
+        Loop regions on click
+      </label>
+    </div>
+  </html>
+*/
+
 document.querySelector('input').onclick = (e) => { loop = e.target.checked }

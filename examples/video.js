@@ -1,18 +1,15 @@
 // Waveform for a video
 
-import WaveSurfer from '/dist/index.js'
-
-// Create a video element and add it to the DOM.
-// The video can also be defined in HTML,
-// in which case we just get it by a selector.
-const video = document.createElement('video')
-video.crossOrigin = 'anonymous'
-video.controls = true
-video.style.width = '100%'
-video.src = 'https://wavesurfer-js.org/example/media/nasa.mp4'
-document.body.appendChild(video)
+// Create a video element
+/*
+<html>
+  <video src="https://wavesurfer-js.org/example/media/nasa.mp4" crossOrigin="anonymous" controls width="100%" />
+</html>
+*/
 
 // Initialize wavesurfer.js
+import WaveSurfer from '/dist/index.js'
+
 const ws = WaveSurfer.create({
   container: document.body,
   waveColor: 'rgb(200, 0, 200)',

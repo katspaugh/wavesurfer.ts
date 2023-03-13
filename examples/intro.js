@@ -32,7 +32,7 @@ const wavesurfer = WaveSurfer.create({
 // Now, let's add some interaction.
 // We'll add a play/pause button.
 
-// First, create the button.
+// First, create a button element
 const button = document.createElement('button')
 button.textContent = 'Play'
 document.body.appendChild(button)

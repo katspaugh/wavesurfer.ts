@@ -3,6 +3,9 @@ import { getLastCode, setLastCode } from './storage.js'
 
 const onSetContent = () => {
   const code = getContent()
+  const html = (code.replace(/\n/g, '').match(/<html>(.+)<\/html>/) || [])[1] || ''
+  const script = code.replace(/<\/?script>?/g, '')
+
   document.getElementById('preview').srcdoc = `
 <!DOCTYPE html>
 <html>
@@ -20,9 +23,12 @@ const onSetContent = () => {
       }
     </style>
   </head>
+
   <body>
+    ${html}
+
     <script type="module">
-      ${code}
+      ${script}
     </script>
   </body>
 </html>

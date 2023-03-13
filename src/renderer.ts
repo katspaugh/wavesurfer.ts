@@ -238,7 +238,7 @@ class Renderer extends EventEmitter<RendererEvents> {
 
     // Adjust the scroll position so that the cursor stays in the same place
     const newCursortPosition = this.cursor.getBoundingClientRect().left
-    this.scrollContainer.scrollLeft += (newCursortPosition - oldCursorPosition)
+    this.scrollContainer.scrollLeft += newCursortPosition - oldCursorPosition
   }
 
   renderProgress(progress: number, autoCenter = false) {

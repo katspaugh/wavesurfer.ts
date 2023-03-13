@@ -25,8 +25,10 @@ class WebAudioPlayer extends Player {
     if (this.sourceNode) {
       this.sourceNode.disconnect()
     }
-    this.sourceNode = this.audioCtx.createMediaElementSource(this.media)
-    this.sourceNode.connect(this.audioCtx.destination)
+    if (this.media) {
+      this.sourceNode = this.audioCtx.createMediaElementSource(this.media)
+      this.sourceNode.connect(this.audioCtx.destination)
+    }
   }
 }
 

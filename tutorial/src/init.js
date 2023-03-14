@@ -1,4 +1,4 @@
-import { initEditor, setContent, getContent } from './editor.js'
+import { initEditor, fetchContent, setContent, getContent } from './editor.js'
 import { getLastCode, setLastCode } from './storage.js'
 
 const onSetContent = () => {
@@ -35,10 +35,6 @@ const onSetContent = () => {
 <body>
 </body>
 `
-}
-
-const fetchContent = async (url) => {
-  return fetch(url).then(res => res.text())
 }
 
 const init = () => {

@@ -202,27 +202,36 @@ class Renderer extends EventEmitter<RendererEvents> {
   }
 
   private createProgressMask() {
-    const progressCtx = this.progressCanvas.getContext('2d', { desynchronized: true })
-    if (!progressCtx) {
-      throw new Error('Failed to get canvas context')
-    }
+    const progressCtx = this.progressCanvas.getContext('2d', { desynchronized: true }) as CanvasRenderingContext2D
+
+    // Set the canvas to the same size as the main canvas
     this.progressCanvas.width = this.mainCanvas.width
     this.progressCanvas.height = this.mainCanvas.height
     this.progressCanvas.style.width = this.mainCanvas.style.width
     this.progressCanvas.style.height = this.mainCanvas.style.height
+
+    // Copy the waveform image to the progress canvas
+    // The main canvas itself is used as the source image
     progressCtx.drawImage(this.mainCanvas, 0, 0)
+    // Set the composition method to draw only where the waveform is drawn
     progressCtx.globalCompositeOperation = 'source-in'
     progressCtx.fillStyle = this.options.progressColor
+    // This rectangle acts as a mask thanks to the composition method
     progressCtx.fillRect(0, 0, this.progressCanvas.width, this.progressCanvas.height)
   }
 
   render(channelData: Float32Array[], duration: number) {
+    // Determine the width of the canvas
     const { devicePixelRatio } = window
-    const width = Math.max(this.container.clientWidth * devicePixelRatio, duration * this.options.minPxPerSec)
+    const parentWidth = this.scrollContainer.clientWidth * devicePixelRatio
+    const scrollWidth = duration * this.options.minPxPerSec
+    const scrollParent = scrollWidth > parentWidth
+    const width = scrollParent ? scrollWidth : parentWidth
     const { height } = this.options
+
     this.mainCanvas.width = width
     this.mainCanvas.height = height
-    this.mainCanvas.style.width = Math.round(width / devicePixelRatio) + 'px'
+    this.mainCanvas.style.width = scrollParent ? Math.round(scrollWidth / devicePixelRatio) + 'px' : '100%'
 
     const renderingFn = this.options.barWidth ? this.renderBarPeaks : this.renderLinePeaks
     renderingFn.call(this, channelData, width, height)

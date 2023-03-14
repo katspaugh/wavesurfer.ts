@@ -7,7 +7,7 @@ Load React:
  */
 
 // Import WaveSurfer
-import WaveSurfer from '/dist/index.js'
+import useWavesurfer from '/dist/react/useWavesurfer.js'
 // Import React stuff
 const { createElement: jsx, useRef, useState, useEffect, useCallback } = React
 
@@ -15,28 +15,19 @@ const { createElement: jsx, useRef, useState, useEffect, useCallback } = React
 // Props are wavesurfer options.
 const WaveSurferComponent = (props) => {
   const containerRef = useRef()
-  const wavesurferRef = useRef()
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
+  const wavesurfer = useWavesurfer(containerRef, props)
 
   // On play button click
   const onPlayClick = useCallback(() => {
-    const wavesurfer = wavesurferRef.current
-    if (!wavesurfer) return
     wavesurfer.isPlaying() ? wavesurfer.pause() : wavesurfer.play()
-  }, [wavesurferRef])
+  }, [wavesurfer])
 
   // Initialize wavesurfer when the container mounts
   // or any of the props change
   useEffect(() => {
-    if (!containerRef.current) return
-
-    const wavesurfer = WaveSurfer.create({
-      ...props,
-      container: containerRef.current,
-    })
-
-    wavesurferRef.current = wavesurfer
+    if (!wavesurfer) return
 
     setCurrentTime(0)
     setIsPlaying(false)
@@ -49,7 +40,6 @@ const WaveSurferComponent = (props) => {
 
     return () => {
       subscriptions.forEach(unsub => unsub())
-      wavesurfer.destroy()
     }
   }, [props, containerRef])
 

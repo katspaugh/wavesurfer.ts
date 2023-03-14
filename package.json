@@ -4,7 +4,9 @@
   "description": "wavesurfer.js is an audio library that draws waveforms and plays audio in the browser.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist/"],
+  "files": [
+    "dist/"
+  ],
   "scripts": {
     "build:dev": "tsc -w",
     "build:umd": "webpack && webpack --config webpack.config.plugins.js",
@@ -18,6 +20,7 @@
   "author": "katspaugh <katspaugh@gmail.com>",
   "license": "ISC",
   "devDependencies": {
+    "@types/react": "^18.0.28",
     "@typescript-eslint/eslint-plugin": "^5.54.0",
     "@typescript-eslint/parser": "^5.54.0",
     "eslint": "^8.35.0",
@@ -30,5 +33,7 @@
     "webpack": "^5.76.1",
     "webpack-cli": "^5.0.1"
   },
-  "dependencies": {}
+  "dependencies": {
+    "react": "^18.2.0"
+  }
 }
